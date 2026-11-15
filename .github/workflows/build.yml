@@ -1,0 +1,36 @@
+name: Build EmoBoard (macOS arm64)
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14   # Apple Silicon (M1/M2 class)
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -B build -G Xcode -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Collect plugins
+        run: |
+          mkdir -p out
+          VST3=$(find build -name "EmoBoard.vst3" -type d | head -n 1)
+          AU=$(find build -name "EmoBoard.component" -type d | head -n 1)
+          echo "VST3: $VST3"
+          echo "AU: $AU"
+          cp -R "$VST3" out/
+          cp -R "$AU" out/
+          codesign --force --deep -s - out/EmoBoard.vst3
+          codesign --force --deep -s - out/EmoBoard.component
+          cd out && zip -r -y ../EmoBoard-macOS.zip EmoBoard.vst3 EmoBoard.component
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: EmoBoard-macOS
+          path: EmoBoard-macOS.zip
