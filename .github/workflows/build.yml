@@ -1,4 +1,4 @@
-name: Build EmoBoard (macOS arm64)
+name: Build Midwest (macOS arm64)
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest  # Apple Silicon (M1/M2 class)
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -19,18 +19,13 @@ jobs:
       - name: Collect plugins
         run: |
           mkdir -p out
-          VST3=$(find build -name "EmoBoard.vst3" -type d | head -n 1)
-          AU=$(find build -name "EmoBoard.component" -type d | head -n 1)
-          echo "VST3: $VST3"
-          echo "AU: $AU"
-          cp -R "$VST3" out/
-          cp -R "$AU" out/
-          codesign --force --deep -s - out/EmoBoard.vst3
-          codesign --force --deep -s - out/EmoBoard.component
-          cd out && zip -r -y ../EmoBoard-macOS.zip EmoBoard.vst3 EmoBoard.component
+          find build \( -name "*.vst3" -o -name "*.component" \) -type d -prune -exec cp -R {} out/ \;
+          ls -la out
+          for f in out/*; do codesign --force --deep -s - "$f"; done
+          cd out && zip -r -y ../Midwest-macOS.zip .
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: EmoBoard-macOS
-          path: EmoBoard-macOS.zip
+          name: Midwest-macOS
+          path: Midwest-macOS.zip
